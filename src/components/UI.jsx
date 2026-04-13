@@ -9,6 +9,10 @@ export const contentSectionAtom = atom(0);
 export const staticViewAtom = atom(false);
 export const lockViewAtom = atom(false);
 export const fixedPoseAtom = atom(false);
+export const sidebarOpenAtom = atom(false);
+export const voiceVolumeAtom = atom(1.0);
+export const voiceSpeedAtom = atom(1.0);
+export const isMutedAtom = atom(false);
 
 // Nội dung cho từng trang - mỗi trang có thể có nhiều phần
 const pageContents = {
@@ -129,6 +133,7 @@ const PageContent = ({ pageNumber, isOpen }) => {
   const content = pageContents[pageNumber] || pageContents[0];
   const [isMobile, setIsMobile] = useState(false);
   const [currentSection, setCurrentSection] = useAtom(contentSectionAtom);
+  const [sidebarOpen, setSidebarOpen] = useAtom(sidebarOpenAtom);
   const [, setBookOpen] = useAtom(bookOpenAtom);
 
   useEffect(() => {
@@ -241,8 +246,8 @@ const PageContent = ({ pageNumber, isOpen }) => {
       {/* Nút đóng lồng trong Sidebar */}
       <button
         className="absolute top-4 right-4 text-gray-400 font-sans hover:text-[#8b5a2b] transition-colors p-2 rounded-full hover:bg-[#8b5a2b]/10 text-sm font-medium flex items-center justify-center z-50 cursor-pointer"
-        onClick={() => setBookOpen(false)}
-        title="Đóng sách"
+        onClick={() => setSidebarOpen(false)}
+        title="Đóng nội dung"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
@@ -346,7 +351,14 @@ const FixedPoseToggle = () => {
 export const UI = () => {
   const [page, setPage] = useAtom(pageAtom);
   const [bookOpen, setBookOpen] = useAtom(bookOpenAtom);
+  const [sidebarOpen, setSidebarOpen] = useAtom(sidebarOpenAtom);
   const [fixedPose, setFixedPose] = useAtom(fixedPoseAtom);
+
+  // Mở sidebar khi mở sách lần đầu
+  useEffect(() => {
+    if (bookOpen) setSidebarOpen(true);
+  }, [bookOpen, setSidebarOpen]);
+
   const [bgKey, setBgKey] = useState("1");
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [currentVideo, setCurrentVideo] = useState(null);
@@ -420,6 +432,83 @@ export const UI = () => {
     }
   }, [page, audioEnabled, outroPlayed]);
 
+  // VOICE OVER LOGIC
+  const [voiceVolume, setVoiceVolume] = useAtom(voiceVolumeAtom);
+  const [voiceSpeed, setVoiceSpeed] = useAtom(voiceSpeedAtom);
+  const [isMuted, setIsMuted] = useAtom(isMutedAtom);
+  const voiceAudioRef = useRef(null);
+
+  // Effect 1: Handle page change and play sequence
+  useEffect(() => {
+    if (!audioEnabled) return;
+
+    const currentAudioPaths = [];
+    if (page === 0) {
+      currentAudioPaths.push("/audios/1.wav");
+    } else {
+      currentAudioPaths.push(`/audios/${page * 2}.wav`);
+      currentAudioPaths.push(`/audios/${page * 2 + 1}.wav`);
+    }
+
+    let isCancelled = false;
+    
+    const playSequential = async (index) => {
+      if (index >= currentAudioPaths.length || isCancelled) return;
+
+      const path = currentAudioPaths[index];
+      
+      const audio = new Audio(path);
+      voiceAudioRef.current = audio;
+      
+      // Khởi tạo thuộc tính từ atom hiện tại
+      audio.volume = voiceVolume;
+      audio.playbackRate = voiceSpeed;
+      audio.muted = isMuted;
+
+      audio.onended = () => {
+        if (!isCancelled) playSequential(index + 1);
+      };
+
+      try {
+        await audio.play();
+        if (isMuted) audio.pause(); // Nếu đang tắt tiếng thì pause ngay (hoặc để volume 0)
+      } catch (err) {
+        if (!isCancelled) playSequential(index + 1);
+      }
+    };
+
+    // Stop current audio when page changes
+    if (voiceAudioRef.current) {
+      voiceAudioRef.current.pause();
+      voiceAudioRef.current = null;
+    }
+
+    playSequential(0);
+
+    return () => {
+      isCancelled = true;
+      if (voiceAudioRef.current) {
+        voiceAudioRef.current.pause();
+        voiceAudioRef.current = null;
+      }
+    };
+  }, [page, audioEnabled]); // CHỈ phụ thuộc vào page và audioEnabled
+
+  // Effect 2: Update audio properties WITHOUT restarting playback
+  useEffect(() => {
+    if (voiceAudioRef.current) {
+      voiceAudioRef.current.volume = voiceVolume;
+      voiceAudioRef.current.playbackRate = voiceSpeed;
+      voiceAudioRef.current.muted = isMuted;
+      
+      if (isMuted) {
+          voiceAudioRef.current.pause();
+      } else if (audioEnabled && voiceAudioRef.current.paused && voiceAudioRef.current.currentTime > 0) {
+          voiceAudioRef.current.play().catch(() => {});
+      }
+    }
+  }, [voiceVolume, voiceSpeed, isMuted]);
+
   // Tự động mở sách khi click vào trang
   const handlePageClick = (pageNumber) => {
     setPage(pageNumber);
@@ -492,10 +581,26 @@ export const UI = () => {
         {/* Switch background options - dropdown top-center removed */}
 
 
-        <div className={`pointer-events-auto flex justify-center pb-4 md:pb-6 mt-auto relative z-60 transition-all duration-700 ease-in-out ${bookOpen ? 'w-full md:w-[65%] md:ml-auto' : 'w-full'}`}>
-          <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-2xl px-4 py-2.5 flex items-center gap-4 md:gap-8 border border-gray-100/50">
+        <div className={`pointer-events-auto flex justify-center pb-4 md:pb-6 mt-auto relative z-60 transition-all duration-700 ease-in-out ${sidebarOpen ? 'w-full md:w-[65%] md:ml-auto' : 'w-full'}`}>
+          <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-2xl px-4 py-2.5 flex items-center gap-4 md:gap-7 border border-gray-100/50">
+            {/* Nội dung (Toggle Sidebar) */}
+            <div className="flex items-center border-r border-gray-200 pr-4 md:pr-7">
+              <button 
+                title={sidebarOpen ? "Đóng nội dung" : "Mở nội dung"}
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className={`transition-all duration-300 flex items-center gap-2 px-2 py-1.5 rounded-lg font-medium text-sm md:text-base ${
+                  sidebarOpen 
+                    ? "text-blue-600 bg-blue-50/80" 
+                    : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
+                }`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                <span className="hidden md:inline">Nội dung</span>
+              </button>
+            </div>
+
             {/* Cố định (Fixed Pose) */}
-            <div className="flex items-center border-r border-gray-200 pr-4 md:pr-8">
+            <div className="flex items-center border-r border-gray-200 pr-4 md:pr-7">
               <button 
                 title={fixedPose ? "Thoát cố định" : "Cố định camera"}
                 onClick={() => setFixedPose(!fixedPose)}
@@ -505,7 +610,7 @@ export const UI = () => {
                     : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
                 }`}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill={fixedPose ? "currentColor" : "none"} stroke="currentColor" strokeWidth={fixedPose ? "0" : "2.5"} strokeLinecap="round" strokeLinejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill={fixedPose ? "currentColor" : "none"} stroke="currentColor" strokeWidth={fixedPose ? "0" : "2.5"} strokeLinecap="round" strokeLinejoin="round">
                   {fixedPose ? (
                     <>
                       <path d="M12 2c.552 0 1 .448 1 1v6.586l2.293-2.293a1 1 0 111.414 1.414L12 13l-4.707-4.293a1 1 0 111.414-1.414L11 9.586V3c0-.552.448-1 1-1z" />
@@ -549,8 +654,58 @@ export const UI = () => {
               </button>
             </div>
 
+            {/* Audio Controls */}
+            <div className="flex items-center gap-3 border-l border-gray-200 pl-4 md:pl-8 ml-2">
+              {/* Mute Toggle */}
+              <button 
+                title={isMuted ? "Bật tiếng" : "Tắt tiếng"} 
+                className={`transition-colors p-2 ${isMuted ? "text-red-500" : "text-gray-500 hover:text-gray-800"}`}
+                onClick={() => setIsMuted(!isMuted)}
+              >
+                {isMuted ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                )}
+              </button>
+
+              {/* Volume Slider - Hidden on small mobile */}
+              <div className="hidden sm:flex items-center gap-2 group relative">
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="1" 
+                  step="0.01" 
+                  value={voiceVolume} 
+                  onChange={(e) => setVoiceVolume(parseFloat(e.target.value))}
+                  className="w-16 md:w-24 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-black"
+                  title={`Âm lượng: ${Math.round(voiceVolume * 100)}%`}
+                />
+              </div>
+
+              {/* Speed Selector */}
+              <div className="relative group">
+                <select 
+                  className="bg-transparent text-xs md:text-sm font-bold text-gray-600 hover:text-black cursor-pointer appearance-none outline-none border-none p-1"
+                  value={voiceSpeed.toString()}
+                  onChange={(e) => setVoiceSpeed(parseFloat(e.target.value))}
+                  title="Tốc độ đọc"
+                >
+                  <option value="0.5">0.5x</option>
+                  <option value="0.75">0.75x</option>
+                  <option value="1">1.0x</option>
+                  <option value="1.25">1.25x</option>
+                  <option value="1.5">1.5x</option>
+                  <option value="2">2.0x</option>
+                </select>
+                <div className="absolute -right-1 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"></path></svg>
+                </div>
+              </div>
+            </div>
+
             {/* Right tools group */}
-            <div className="flex items-center border-l border-gray-200 pl-4 md:pl-8 ml-2">
+            <div className="flex items-center border-l border-gray-200 pl-4 md:pl-6 ml-2">
               {/* Fullscreen */}
               <button title="Toàn màn hình" className="text-gray-500 hover:text-gray-800 transition-colors p-2" onClick={() => {
                 if (!document.fullscreenElement) {
@@ -567,10 +722,10 @@ export const UI = () => {
       </main>
 
       {/* Hiển thị nội dung trang khi sách mở */}
-      <PageContent pageNumber={page} isOpen={bookOpen} />
+      <PageContent pageNumber={page} isOpen={sidebarOpen} />
 
       {/* Nút đóng sách (Chỉ hiện trên Mobile) */}
-      {bookOpen && (
+      {sidebarOpen && (
         <button
           className="fixed top-4 right-4 z-[70] bg-white/90 text-black px-3 py-2 rounded-full transition-all duration-300 ease-out text-sm min-h-[44px] min-w-[44px] flex items-center justify-center
           shadow-lg hover:shadow-xl hover:bg-white backdrop-blur-md border border-black/5

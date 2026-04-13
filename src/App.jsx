@@ -2,17 +2,17 @@ import { Loader } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Suspense } from "react";
 import { Experience } from "./components/Experience";
-import { UI, bookOpenAtom } from "./components/UI";
+import { UI, sidebarOpenAtom } from "./components/UI";
 import { useAtom } from "jotai";
 
 function App() {
-  const [bookOpen] = useAtom(bookOpenAtom);
+  const [sidebarOpen] = useAtom(sidebarOpenAtom);
 
   return (
     <>
       <UI />
       <Loader />
-      <div className={`fixed top-0 bottom-0 right-0 h-full transition-all duration-700 ease-in-out ${bookOpen ? 'w-full md:w-[65%]' : 'w-full'}`}>
+      <div className={`fixed top-0 bottom-0 right-0 h-full transition-all duration-700 ease-in-out ${sidebarOpen ? 'w-full md:w-[65%]' : 'w-full'}`}>
         <Canvas
           shadows
           camera={{
