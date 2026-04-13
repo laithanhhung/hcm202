@@ -4,23 +4,32 @@ import { useRef } from "react";
 import { Vector3 } from "three";
 import { useAtom } from "jotai";
 import { Book } from "./Book";
-import { bookOpenAtom, staticViewAtom, fixedPoseAtom } from "./UI";
+import { bookOpenAtom, staticViewAtom, fixedPoseAtom, sidebarOpenAtom } from "./UI";
 
 export const Experience = () => {
   const [bookOpen] = useAtom(bookOpenAtom);
   const [staticView] = useAtom(staticViewAtom);
   const controlsRef = useRef();
   const [fixedPose] = useAtom(fixedPoseAtom);
+  const [sidebarOpen] = useAtom(sidebarOpenAtom);
   const bookGroupRef = useRef();
   const { camera } = useThree();
+
+  // Smooth camera X offset (lerped each frame to avoid canvas-resize jank)
+  const smoothOffsetX = useRef(0);
 
   useFrame((_, delta) => {
     const isMobile = window.innerWidth <= 768;
 
+    // Desktop sidebar X offset: shift camera LEFT by ~17.5% of visible world when sidebar opens
+    // (35% sidebar → canvas center moves right, so camera shifts left to compensate)
+    const targetOffsetX = (!isMobile && sidebarOpen) ? -1.1 : 0;
+    smoothOffsetX.current += (targetOffsetX - smoothOffsetX.current) * Math.min(1, delta * 4);
+
     if (staticView || fixedPose) {
       // 2D view: snap ngay vị trí/góc nhìn cố định
-      const pos = new Vector3(0, 2.0, 4.2);
-      const target = new Vector3(0, 1.0, 0);
+      const pos = new Vector3(smoothOffsetX.current, 2.0, 4.2);
+      const target = new Vector3(smoothOffsetX.current, 1.0, 0);
       camera.position.copy(pos);
       if (controlsRef.current) {
         controlsRef.current.target.copy(target);
@@ -42,9 +51,9 @@ export const Experience = () => {
     const mobileOpenPos = new Vector3(0, 2.2, 3.5);
     const mobileClosedPos = new Vector3(0, 1.8, 4.5);
 
-    // Desktop positioning: sách ở giữa màn hình
-    const desktopOpenPos = new Vector3(0, 2, 3.5);
-    const desktopClosedPos = new Vector3(-0.5, 1, 4);
+    // Desktop positioning: offset X to keep book visually centered in viewport
+    const desktopOpenPos = new Vector3(smoothOffsetX.current, 2, 3.5);
+    const desktopClosedPos = new Vector3(smoothOffsetX.current - 0.5, 1, 4);
 
     const openPos = isMobile ? mobileOpenPos : desktopOpenPos;
     const closedPos = isMobile ? mobileClosedPos : desktopClosedPos;
@@ -57,9 +66,9 @@ export const Experience = () => {
       const mobileOpenTarget = new Vector3(0, 1.2, 0);
       const mobileClosedTarget = new Vector3(0, 0.8, 0);
 
-      // Desktop target: nhìn vào sách ở giữa
-      const desktopOpenTarget = new Vector3(0, 0.66, 0);
-      const desktopClosedTarget = new Vector3(0, 0, 0);
+      // Desktop target: shift with sidebar offset
+      const desktopOpenTarget = new Vector3(smoothOffsetX.current, 0.66, 0);
+      const desktopClosedTarget = new Vector3(smoothOffsetX.current, 0, 0);
 
       const openTarget = isMobile ? mobileOpenTarget : desktopOpenTarget;
       const closedTarget = isMobile ? mobileClosedTarget : desktopClosedTarget;

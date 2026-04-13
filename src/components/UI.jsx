@@ -581,7 +581,13 @@ export const UI = () => {
         {/* Switch background options - dropdown top-center removed */}
 
 
-        <div className={`pointer-events-auto flex justify-center pb-4 md:pb-6 mt-auto relative z-60 transition-all duration-700 ease-in-out ${sidebarOpen ? 'w-full md:w-[65%] md:ml-auto' : 'w-full'}`}>
+        <div
+          className="pointer-events-auto flex justify-center pb-4 md:pb-6 mt-auto relative z-60 w-full"
+          style={{
+            transform: sidebarOpen ? 'translateX(17.5%)' : 'translateX(0)',
+            transition: 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
+        >
           <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-2xl px-4 py-2.5 flex items-center gap-4 md:gap-7 border border-gray-100/50">
             {/* Nội dung (Toggle Sidebar) */}
             <div className="flex items-center border-r border-gray-200 pr-4 md:pr-7">

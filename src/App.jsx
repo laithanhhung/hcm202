@@ -6,13 +6,11 @@ import { UI, sidebarOpenAtom } from "./components/UI";
 import { useAtom } from "jotai";
 
 function App() {
-  const [sidebarOpen] = useAtom(sidebarOpenAtom);
-
   return (
     <>
       <UI />
       <Loader />
-      <div className={`fixed top-0 bottom-0 right-0 h-full transition-all duration-700 ease-in-out ${sidebarOpen ? 'w-full md:w-[65%]' : 'w-full'}`}>
+      <div className="fixed top-0 bottom-0 right-0 h-full w-full">
         <Canvas
           shadows
           camera={{
