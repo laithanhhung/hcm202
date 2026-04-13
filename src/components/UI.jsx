@@ -250,10 +250,6 @@ for (let i = 0; i < pictures.length; i += 2) {
     back: pictures[i + 1] ? pictures[i + 1] : 'back'
   });
 }
-pages.push({
-  front: '17.png', // Changed to 17 to match the last image available
-  back: 'back'
-});
 
 
 // Component hiển thị nội dung trang
@@ -467,6 +463,7 @@ const FixedPoseToggle = () => {
 export const UI = () => {
   const [page, setPage] = useAtom(pageAtom);
   const [bookOpen, setBookOpen] = useAtom(bookOpenAtom);
+  const [fixedPose, setFixedPose] = useAtom(fixedPoseAtom);
   const [bgKey, setBgKey] = useState("1");
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [currentVideo, setCurrentVideo] = useState(null);
@@ -609,99 +606,79 @@ export const UI = () => {
             alt="WAWA SENSEI"
           /> */}
         </a>
-        {/* Switch background options - dropdown top-center */}
-        <div className="pointer-events-auto fixed top-6 left-1/2 -translate-x-1/2 z-30">
-          <select
-            className="bg-black/40 text-white px-3 py-2 rounded-lg border border-white/30 backdrop-blur-sm text-sm md:text-base"
-            value={bgKey}
-            onChange={(e) => {
-              const value = e.target.value;
-              setBgKey(value);
-              const map = {
-                1: "/images/background.jpg",
-                2: "/images/backgroundVD1.mp4",
-                3: "/images/BackgroundVD2.mp4",
-              };
+        {/* Switch background options - dropdown top-center removed */}
 
-              // Check if it's a video file
-              if (map[value].endsWith(".mp4")) {
-                // Set video background with loading state
-                console.log("Setting video:", map[value]);
-                setVideoLoading(true);
-                setCurrentVideo(map[value]);
-                document.documentElement.style.setProperty(
-                  "--app-bg-image",
-                  "none"
-                );
-              } else {
-                // Set image background
-                console.log("Setting image:", map[value]);
-                setVideoLoading(false);
-                setCurrentVideo(null);
-                document.documentElement.style.setProperty(
-                  "--app-bg-image",
-                  `url('${map[value]}')`
-                );
-              }
-            }}
-          >
-            <option value="1">Lăng Bác</option>
-            {/* <option value="2">Vịnh Hạ Long</option> */}
-            <option value="3">Sài Gòn</option>
-          </select>
-        </div>
-        {/* Nhóm nút Cố định - Desktop (cạnh dropdown) */}
-        <div
-          className="pointer-events-auto fixed top-6 z-30 hidden md:flex items-center gap-2"
-          style={{ left: "50%", transform: "translateX(calc(-50% + 220px))" }}
-        >
-          {/* Nút Cố định pose */}
-          <FixedPoseToggle />
-        </div>
 
-        {/* Nhóm nút Cố định - Mobile (góc phải trên) */}
-        <div className="pointer-events-auto fixed top-14 left-1/2 -translate-x-1/2 z-30 flex md:hidden items-center gap-2">
-          <FixedPoseToggle />
-        </div>
-
-        <div
-          ref={pageBarRef}
-          className="w-full overflow-x-auto pointer-events-auto flex justify-center relative z-60 bg-gradient-to-t from-black/60 to-transparent"
-        >
-          <div className="overflow-x-auto flex items-center gap-2 md:gap-4 max-w-full p-2 md:p-10">
-            {[...pages].map((_, index) => (
-              <button
-                key={index}
-                className={`px-2 py-1 md:px-4 md:py-3 rounded-full text-xs md:text-lg uppercase shrink-0 min-h-[44px] transition-all duration-300 ease-out
-                  ${
-                    index === page
-                      ? "bg-white/90 text-black shadow-lg"
-                      : "bg-black/30 text-white shadow-sm"
-                  }
-                  border border-white/10 hover:border-white/30 backdrop-blur-md
-                  hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0 active:scale-[0.98]
-                  focus:outline-none focus:ring-2 focus:ring-white/40`}
-                onClick={() => handlePageClick(index)}
-                data-page={index}
+        <div className="w-full pointer-events-auto flex justify-center pb-4 md:pb-6 mt-auto relative z-60">
+          <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-2xl px-4 py-2.5 flex items-center gap-4 md:gap-8 border border-gray-100/50">
+            {/* Cố định (Fixed Pose) */}
+            <div className="flex items-center border-r border-gray-200 pr-4 md:pr-8">
+              <button 
+                title={fixedPose ? "Thoát cố định" : "Cố định camera"}
+                onClick={() => setFixedPose(!fixedPose)}
+                className={`transition-all duration-300 flex items-center gap-2 px-2 py-1.5 rounded-lg font-medium text-sm md:text-base ${
+                  fixedPose 
+                    ? "text-blue-600 bg-blue-50/80" 
+                    : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
+                }`}
               >
-                {index === 0 ? "Mặt trước" : `Trang ${index}`}
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill={fixedPose ? "currentColor" : "none"} stroke="currentColor" strokeWidth={fixedPose ? "0" : "2.5"} strokeLinecap="round" strokeLinejoin="round">
+                  {fixedPose ? (
+                    <>
+                      <path d="M12 2c.552 0 1 .448 1 1v6.586l2.293-2.293a1 1 0 111.414 1.414L12 13l-4.707-4.293a1 1 0 111.414-1.414L11 9.586V3c0-.552.448-1 1-1z" />
+                      <path d="M5 21a1 1 0 010-2h14a1 1 0 010 2H5z" />
+                    </>
+                  ) : (
+                    <>
+                      <path d="M12 2v6.586l2.293-2.293a1 1 0 011.414 1.414L12 13l-4.707-4.293a1 1 0 011.414-1.414L11 9.586V2h1z" />
+                      <path d="M5 21h14" />
+                    </>
+                  )}
+                </svg>
+                <span className="hidden md:inline">{fixedPose ? "Bỏ cố định" : "Cố định"}</span>
               </button>
-            ))}
-            <button
-              className={`px-2 py-1 md:px-4 md:py-3 rounded-full text-xs md:text-lg uppercase shrink-0 min-h-[44px] transition-all duration-300 ease-out
-                ${
-                  page === pages.length
-                    ? "bg-white/90 text-black shadow-lg"
-                    : "bg-black/30 text-white shadow-sm"
+            </div>
+
+            {/* Controls group */}
+            <div className="flex items-center gap-4">
+              {/* Prev */}
+              <button 
+                title="Trang trước"
+                className={`transition-colors flex items-center ${page === 0 ? "text-gray-300 cursor-not-allowed" : "text-gray-500 hover:text-gray-800"}`} 
+                onClick={() => page > 0 && handlePageClick(page - 1)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M11.5 12l8.5 6V6zM2 12l8.5 6V6z"></path></svg>
+              </button>
+              
+              {/* Page indicator */}
+              <div className="flex items-center text-sm md:text-base font-bold rounded-lg overflow-hidden shrink-0 mx-1">
+                <div className="bg-black text-white px-3 md:px-5 py-1.5 md:py-2 min-w-[3rem] text-center">{page + 1}</div>
+                <div className="bg-gray-700 text-gray-200 px-3 md:px-5 py-1.5 md:py-2 min-w-[3rem] text-center">{pages.length + 1}</div>
+              </div>
+              
+              {/* Next */}
+              <button 
+                title="Trang sau"
+                className={`transition-colors flex items-center ${page >= pages.length ? "text-gray-300 cursor-not-allowed" : "text-gray-500 hover:text-gray-800"}`} 
+                onClick={() => page < pages.length && handlePageClick(page + 1)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 12l-8.5-6v12zM22 12l-8.5-6v12z"></path></svg>
+              </button>
+            </div>
+
+            {/* Right tools group */}
+            <div className="flex items-center border-l border-gray-200 pl-4 md:pl-8 ml-2">
+              {/* Fullscreen */}
+              <button title="Toàn màn hình" className="text-gray-500 hover:text-gray-800 transition-colors p-2" onClick={() => {
+                if (!document.fullscreenElement) {
+                  document.documentElement.requestFullscreen().catch(() => {});
+                } else {
+                  document.exitFullscreen().catch(() => {});
                 }
-                border border-white/10 hover:border-white/30 backdrop-blur-md
-                hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0 active:scale-[0.98]
-                focus:outline-none focus:ring-2 focus:ring-white/40`}
-              onClick={() => handlePageClick(pages.length)}
-              data-page={pages.length}
-            >
-              Mặt sau
-            </button>
+              }}>
+                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+              </button>
+            </div>
           </div>
         </div>
       </main>
