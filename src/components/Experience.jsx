@@ -43,7 +43,7 @@ export const Experience = () => {
     const mobileClosedPos = new Vector3(0, 1.8, 4.5);
 
     // Desktop positioning: sách ở giữa màn hình
-    const desktopOpenPos = new Vector3(0.9, 2, 2.6);
+    const desktopOpenPos = new Vector3(0, 2, 3.5);
     const desktopClosedPos = new Vector3(-0.5, 1, 4);
 
     const openPos = isMobile ? mobileOpenPos : desktopOpenPos;
@@ -58,7 +58,7 @@ export const Experience = () => {
       const mobileClosedTarget = new Vector3(0, 0.8, 0);
 
       // Desktop target: nhìn vào sách ở giữa
-      const desktopOpenTarget = new Vector3(0.35, 0.66, 0);
+      const desktopOpenTarget = new Vector3(0, 0.66, 0);
       const desktopClosedTarget = new Vector3(0, 0, 0);
 
       const openTarget = isMobile ? mobileOpenTarget : desktopOpenTarget;
@@ -101,7 +101,7 @@ export const Experience = () => {
               : bookOpen
               ? window.innerWidth <= 768
                 ? [0, 1.8, 0]
-                : [1, 0.6, 0]
+                : [0, 0.6, 0]
               : window.innerWidth <= 768
               ? [0, -0.2, 0]
               : [0, 0, 0]
