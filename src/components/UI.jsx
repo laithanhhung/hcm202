@@ -1,7 +1,7 @@
 import { atom, useAtom } from "jotai";
 import { useEffect, useState, useRef } from "react";
 
-const pictures = Array.from({length: 16}, (_, i) => `${i + 1}.png`);
+const pictures = Array.from({length: 17}, (_, i) => `${i + 1}.png`);
 
 export const pageAtom = atom(0);
 export const bookOpenAtom = atom(false);
@@ -251,7 +251,7 @@ for (let i = 0; i < pictures.length; i += 2) {
   });
 }
 pages.push({
-  front: '16.png',
+  front: '17.png', // Changed to 17 to match the last image available
   back: 'back'
 });
 

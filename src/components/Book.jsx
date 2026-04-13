@@ -92,7 +92,7 @@ pages.forEach((page) => {
 
   useTexture.preload(`/images/${page.front}${frontExt}`);
   useTexture.preload(`/images/${page.back}${backExt}`);
-  useTexture.preload(`/images/book-cover-roughness.jpg`);
+  useTexture.preload(`/book-cover-roughness.jpg`);
 });
 
 const Page = ({ number, front, back, page, opened, bookClosed, ...props }) => {
@@ -104,7 +104,7 @@ const Page = ({ number, front, back, page, opened, bookClosed, ...props }) => {
     `/images/${front}${frontExt}`,
     `/images/${back}${backExt}`,
     ...(number === 0 || number === pages.length - 1
-      ? [`/images/book-cover-roughness.jpg`]
+      ? [`/book-cover-roughness.jpg`]
       : []),
   ]);
   picture.colorSpace = picture2.colorSpace = SRGBColorSpace;
